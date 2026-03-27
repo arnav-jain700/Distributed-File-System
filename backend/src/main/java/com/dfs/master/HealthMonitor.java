@@ -52,3 +52,13 @@ public class HealthMonitor implements Runnable {
             }
         }
     }
+    
+    /**
+     * Cleans up the system when a process dies.
+     */
+    private void handleNodeFailure(String deadNodeId) {
+        activeNodes.remove(deadNodeId);
+        // Future logic: Find which chunks were on this node 
+        // and command other nodes to create new copies.
+    }
+}
