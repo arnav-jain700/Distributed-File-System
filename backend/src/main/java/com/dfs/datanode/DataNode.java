@@ -57,7 +57,7 @@ public class DataNode {
                 
                 while (true) {
                     try (Socket masterConnection = serverSocket.accept();
-                         DataInputStream in = new DataInputStream(masterConnection.getInputStream())) {
+                        DataInputStream in = new DataInputStream(masterConnection.getInputStream())) {
                         
                         // Read the chunk ID, size, and the raw bytes
                         String chunkId = in.readUTF();

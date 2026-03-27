@@ -16,24 +16,30 @@ public class ClientHandler implements Runnable {
 
     @Override
     public void run() {
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
-            String message = in.readLine();
+        try {
+            // THE FIX: Put a 20-second maximum wait time on the socket
+            clientSocket.setSoTimeout(20000); 
             
-            // Expecting message format: "HEARTBEAT 9001"
-            if (message != null && message.startsWith("HEARTBEAT")) {
-                String[] parts = message.split(" ");
-                if (parts.length == 2) {
-                    String dataNodePort = parts[1]; 
-                    
-                    // Combine IP and Port to create a routable address (e.g., "localhost:9001")
-                    String nodeAddress = "localhost:" + dataNodePort;
-                    
-                    System.out.println("Heartbeat received from: " + nodeAddress);
-                    healthMonitor.updateHeartbeat(nodeAddress);
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
+                String message;
+                while ((message = in.readLine()) != null) {
+                    if (message.startsWith("HEARTBEAT")) {
+                        String[] parts = message.split(" ");
+                        if (parts.length == 2) {
+                            String dataNodePort = parts[1]; 
+                            String nodeAddress = "localhost:" + dataNodePort;
+                            
+                            System.out.println("Heartbeat received from: " + nodeAddress);
+                            healthMonitor.updateHeartbeat(nodeAddress);
+                        }
+                    }
                 }
             }
+        } catch (java.net.SocketTimeoutException e) {
+            // This happens if 20 seconds pass with no heartbeat!
+            System.err.println("Data Node timed out (Ghosted the connection). Closing thread.");
         } catch (Exception e) {
-            System.err.println("Error reading heartbeat: " + e.getMessage());
+            System.err.println("Data Node disconnected: " + e.getMessage());
         } finally {
             try { clientSocket.close(); } catch (Exception e) {}
         }

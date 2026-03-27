@@ -101,8 +101,9 @@ public class MasterApiServer {
         }
     }
 
+
     /**
-     * Chops the large byte array into chunks and routes them to active Data Nodes.
+     * Chops the large byte array into chunks and replicates them across multiple Data Nodes.
      */
     private void splitIntoChunks(byte[] fileBytes, String filename) throws IOException {
         java.util.List<String> activeNodes = healthMonitor.getActiveNodes();
@@ -113,48 +114,56 @@ public class MasterApiServer {
         int totalChunks = (int) Math.ceil((double) fileBytes.length / CHUNK_SIZE);
         System.out.println("Splitting file into " + totalChunks + " chunks...");
 
-        FileMetadata fileMetadata= new FileMetadata(filename, fileBytes.length);
-
+        FileMetadata fileMetadata = new FileMetadata(filename, fileBytes.length);
         int offset = 0;
-        java.util.Random random = new java.util.Random();
+        
+        // THE UPGRADE: How many copies of each chunk do we want?
+        int REPLICATION_FACTOR = 2; 
 
         for (int i = 0; i < totalChunks; i++) {
             int length = Math.min(CHUNK_SIZE, fileBytes.length - offset);
             byte[] chunkData = new byte[length];
             System.arraycopy(fileBytes, offset, chunkData, 0, length);
             
-            String chunkId = UUID.randomUUID().toString();
-            
-            // Pick a random active Data Node to send this chunk to
-            String targetNodeAddress = activeNodes.get(random.nextInt(activeNodes.size()));
-
-            // Record this chunk's location in our metadata receipt
+            String chunkId = java.util.UUID.randomUUID().toString();
             ChunkInfo chunkInfo = new ChunkInfo(chunkId, i);
-            chunkInfo.addNodeLocation(targetNodeAddress);
-            fileMetadata.addChunk(chunkInfo);
 
-            String[] hostAndPort = targetNodeAddress.split(":");
-            String ip = hostAndPort[0];
-            int port = Integer.parseInt(hostAndPort[1]);
+            // Shuffle the list of active nodes to randomize distribution
+            java.util.Collections.shuffle(activeNodes);
+            
+            // Make sure we don't try to replicate 2 times if only 1 node is online!
+            int nodesToPick = Math.min(REPLICATION_FACTOR, activeNodes.size());
+            
+            System.out.println("Replicating Chunk " + chunkId + " to " + nodesToPick + " distinct nodes.");
 
-            System.out.println("Routing Chunk " + chunkId + " to Node at " + targetNodeAddress);
-
-            // THE THROW: Open a socket to the Data Node and push the bytes
-            try (java.net.Socket socket = new java.net.Socket(ip, port);
-                java.io.DataOutputStream out = new java.io.DataOutputStream(socket.getOutputStream())) {
+            // Loop through our selected nodes and throw the chunk to ALL of them
+            for (int j = 0; j < nodesToPick; j++) {
+                String targetNodeAddress = activeNodes.get(j);
                 
-                out.writeUTF(chunkId); // Send the chunk ID
-                out.writeInt(length);  // Send the size
-                out.write(chunkData);  // Send the actual file bytes
-                
-            } catch (IOException e) {
-                System.err.println("Failed to send chunk to " + targetNodeAddress + ": " + e.getMessage());
+                // Write it down on the Master's receipt!
+                chunkInfo.addNodeLocation(targetNodeAddress); 
+
+                String[] hostAndPort = targetNodeAddress.split(":");
+                String ip = hostAndPort[0];
+                int port = Integer.parseInt(hostAndPort[1]);
+
+                try (java.net.Socket socket = new java.net.Socket(ip, port);
+                    java.io.DataOutputStream out = new java.io.DataOutputStream(socket.getOutputStream())) {
+                    
+                    out.writeUTF(chunkId); 
+                    out.writeInt(length);  
+                    out.write(chunkData);  
+                    
+                } catch (IOException e) {
+                    System.err.println("Failed to send replica to " + targetNodeAddress + ": " + e.getMessage());
+                }
             }
-
+            
+            fileMetadata.addChunk(chunkInfo);
             offset += length;
-            // Save the completed receipt to the Master's Brain
-            namespaceMap.put(filename, fileMetadata);
-            System.out.println("Successfully recorded " + filename + " in the NamespaceMap.");
         }
+        
+        namespaceMap.put(filename, fileMetadata);
+        System.out.println("Successfully recorded " + filename + " with full replication.");
     }
 }

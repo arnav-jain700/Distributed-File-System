@@ -17,6 +17,46 @@
             "args": [
                 "9001"
             ]
+        },
+        {
+            "type": "java",
+            "name": "Run DataNode (9002)",
+            "request": "launch",
+            "mainClass": "com.dfs.datanode.DataNode",
+            "projectName": "distributed-file-system",
+            "args": [
+                "9002"
+            ]
+        },
+        {
+            "type": "java",
+            "name": "Run DataNode (9003)",
+            "request": "launch",
+            "mainClass": "com.dfs.datanode.DataNode",
+            "projectName": "distributed-file-system",
+            "args": [
+                "9003"
+            ]
+        },
+        {
+            "type": "java",
+            "name": "Run DataNode (9004)",
+            "request": "launch",
+            "mainClass": "com.dfs.datanode.DataNode",
+            "projectName": "distributed-file-system",
+            "args": [
+                "9004"
+            ]
+        },
+        {
+            "type": "java",
+            "name": "Run DataNode (9005)",
+            "request": "launch",
+            "mainClass": "com.dfs.datanode.DataNode",
+            "projectName": "distributed-file-system",
+            "args": [
+                "9005"
+            ]
         }
     ]
 }
