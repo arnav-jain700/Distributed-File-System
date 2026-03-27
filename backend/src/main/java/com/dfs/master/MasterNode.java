@@ -51,3 +51,10 @@ public class MasterNode {
             System.err.println("Critical Network Failure: " + e.getMessage());
         }
     }
+
+    public static void main(String[] args) 
+    {
+        MasterNode master = new MasterNode();
+        master.start();
+    }
+}
