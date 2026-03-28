@@ -1,6 +1,7 @@
 package com.dfs.master;
 
 import com.dfs.shared.models.FileMetadata;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class NamespaceMap {
@@ -12,7 +13,6 @@ public class NamespaceMap {
         this.map = new ConcurrentHashMap<>();
     }
 
-    // THIS IS THE MISSING METHOD!
     public void put(String filename, FileMetadata metadata) {
         map.put(filename, metadata);
     }
@@ -23,5 +23,9 @@ public class NamespaceMap {
 
     public boolean contains(String filename) {
         return map.containsKey(filename);
+    }
+
+    public Collection<FileMetadata> getAllFiles() {
+        return map.values();
     }
 }

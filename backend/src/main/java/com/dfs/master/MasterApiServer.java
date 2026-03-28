@@ -335,7 +335,7 @@ public class MasterApiServer {
             if (port != null) {
                 System.out.println("Executing assassination order on Data Node: " + port);
                 try (java.net.Socket socket = new java.net.Socket("127.0.0.1", Integer.parseInt(port));
-                     java.io.DataOutputStream out = new java.io.DataOutputStream(socket.getOutputStream())) {
+                    java.io.DataOutputStream out = new java.io.DataOutputStream(socket.getOutputStream())) {
                     out.writeUTF("KILL");
                     out.flush();
                 } catch (Exception e) {
