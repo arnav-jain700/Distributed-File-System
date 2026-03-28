@@ -254,4 +254,69 @@ public class MasterApiServer {
             }
         }
     }
+
+    
+    /**
+     * Packages the Master Node's brain into a JSON string for the frontend dashboard.
+     */
+    class StatusHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+
+            StringBuilder json = new StringBuilder();
+            json.append("{");
+            
+            // 1. Package the Active Nodes
+            json.append("\"activeNodes\": [");
+            java.util.List<String> nodes = healthMonitor.getActiveNodes();
+            for (int i = 0; i < nodes.size(); i++) {
+                json.append("\"").append(nodes.get(i)).append("\"");
+                if (i < nodes.size() - 1) json.append(",");
+            }
+            json.append("],");
+            
+            // 2. Package the File Receipts
+            json.append("\"files\": [");
+            java.util.List<FileMetadata> files = new java.util.ArrayList<>(namespaceMap.getAllFiles());
+            for (int i = 0; i < files.size(); i++) {
+                FileMetadata fm = files.get(i);
+                json.append("{");
+                json.append("\"filename\": \"").append(fm.getFilename()).append("\",");
+                json.append("\"size\": ").append(fm.getFileSize()).append(",");
+                
+                // Package the Chunks inside the File
+                json.append("\"chunks\": [");
+                java.util.List<ChunkInfo> chunks = fm.getChunks();
+                for (int j = 0; j < chunks.size(); j++) {
+                    ChunkInfo chunk = chunks.get(j);
+                    json.append("{");
+                    json.append("\"id\": \"").append(chunk.getChunkId()).append("\",");
+                    
+                    // Package the Node Locations inside the Chunk
+                    json.append("\"nodes\": [");
+                    java.util.List<String> locs = chunk.getNodeLocations();
+                    for (int k = 0; k < locs.size(); k++) {
+                        json.append("\"").append(locs.get(k)).append("\"");
+                        if (k < locs.size() - 1) json.append(",");
+                    }
+                    json.append("]");
+                    json.append("}");
+                    if (j < chunks.size() - 1) json.append(",");
+                }
+                json.append("]");
+                json.append("}");
+                if (i < files.size() - 1) json.append(",");
+            }
+            json.append("]");
+            json.append("}");
+
+            String response = json.toString();
+            exchange.sendResponseHeaders(200, response.getBytes().length);
+            try (java.io.OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes());
+            }
+        }
+    }
 }
