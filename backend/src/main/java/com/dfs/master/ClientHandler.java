@@ -17,8 +17,8 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try {
-            // THE FIX: Put a 20-second maximum wait time on the socket
-            clientSocket.setSoTimeout(20000); 
+            // Put a 15-second maximum wait time on the socket
+            clientSocket.setSoTimeout(15000); 
             
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
                 String message;
@@ -36,7 +36,7 @@ public class ClientHandler implements Runnable {
                 }
             }
         } catch (java.net.SocketTimeoutException e) {
-            // This happens if 20 seconds pass with no heartbeat!
+            // This happens if 15 seconds pass with no heartbeat!
             System.err.println("Data Node timed out (Ghosted the connection). Closing thread.");
         } catch (Exception e) {
             System.err.println("Data Node disconnected: " + e.getMessage());
